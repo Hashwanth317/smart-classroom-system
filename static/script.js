@@ -122,9 +122,16 @@ function updateMetrics(metrics) {
   const presentEl = document.getElementById("metricPresentCount");
   if (presentEl) presentEl.textContent = metrics.students_present ?? 0;
 
-  // 2. Current Occupancy
+  // 2. Current Occupancy (Room Count)
   const occEl = document.getElementById("metricOccupancy");
   if (occEl) occEl.textContent = metrics.occupancy ?? 0;
+
+  // 2b. IN & OUT Counts (IR Sensors)
+  const inEl = document.getElementById("metricInCount");
+  if (inEl) inEl.textContent = metrics.in_count ?? 0;
+
+  const outEl = document.getElementById("metricOutCount");
+  if (outEl) outEl.textContent = metrics.out_count ?? 0;
 
   // 3. Classroom Status
   const classBadge = document.getElementById("metricClassroomBadge");
@@ -316,13 +323,38 @@ function filterAttendance() {
   renderAttendanceTable(cachedAttendance);
 }
 
-async function sendHardwareTelemetry() {
-  const occ = parseInt(document.getElementById("simOccupancy").value) || 0;
-  const light = document.getElementById("simLight").value === "true";
-  const fan = document.getElementById("simFan").value === "true";
-  const pir = document.getElementById("simPIR").value === "true";
-  const statusEl = document.getElementById("telemetryStatus");
+function autoCalcSimulator() {
+  const inVal = parseInt(document.getElementById("simInCount")?.value) || 0;
+  const outVal = parseInt(document.getElementById("simOutCount")?.value) || 0;
+  const room = Math.max(0, inVal - outVal);
 
+  const roomEl = document.getElementById("simRoomCount");
+  if (roomEl) roomEl.value = room;
+
+  const lightBadge = document.getElementById("simLightBadge");
+  const fanBadge = document.getElementById("simFanBadge");
+
+  const lightOn = (room > 0);
+  const fanOn = (room > 5);
+
+  if (lightBadge) {
+    lightBadge.textContent = lightOn ? "ON" : "OFF";
+    lightBadge.className = lightOn ? "badge badge-present" : "badge badge-not-entered";
+  }
+  if (fanBadge) {
+    fanBadge.textContent = fanOn ? "ON" : "OFF";
+    fanBadge.className = fanOn ? "badge badge-present" : "badge badge-not-entered";
+  }
+}
+
+async function sendHardwareTelemetry() {
+  const inVal = parseInt(document.getElementById("simInCount")?.value) || 0;
+  const outVal = parseInt(document.getElementById("simOutCount")?.value) || 0;
+  const roomVal = Math.max(0, inVal - outVal);
+  const light = (roomVal > 0);
+  const fan = (roomVal > 5);
+
+  const statusEl = document.getElementById("telemetryStatus");
   statusEl.textContent = "Sending...";
   statusEl.style.color = "var(--primary)";
 
@@ -331,15 +363,16 @@ async function sendHardwareTelemetry() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        occupancy: occ,
+        inCount: inVal,
+        outCount: outVal,
+        roomCount: roomVal,
         lightStatus: light,
-        fanStatus: fan,
-        pirStatus: pir
+        fanStatus: fan
       })
     });
     const data = await res.json();
     if (data.success) {
-      statusEl.textContent = "Telemetry Synced!";
+      statusEl.textContent = "IR Telemetry Synced!";
       statusEl.style.color = "var(--success)";
       fetchDashboardData();
       setTimeout(() => { statusEl.textContent = ""; }, 3000);

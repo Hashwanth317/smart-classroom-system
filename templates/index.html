@@ -68,14 +68,34 @@
         <div class="card-subtitle">Marked via Face Recognition</div>
       </div>
 
-      <!-- Current Occupancy -->
+      <!-- Current Occupancy (Room Count) -->
       <div class="card">
-        <div class="card-title">Current Occupancy</div>
+        <div class="card-title">Room Count</div>
         <div class="card-value">
           <span id="metricOccupancy">0</span>
-          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">people</span>
+          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">inside</span>
         </div>
-        <div class="card-subtitle">IR Sensor Occupancy Count</div>
+        <div class="card-subtitle">Current Occupancy (IN - OUT)</div>
+      </div>
+
+      <!-- IN Count -->
+      <div class="card">
+        <div class="card-title">Total IN</div>
+        <div class="card-value">
+          <span id="metricInCount">0</span>
+          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">entries</span>
+        </div>
+        <div class="card-subtitle">IR Sensor (Pin 18)</div>
+      </div>
+
+      <!-- OUT Count -->
+      <div class="card">
+        <div class="card-title">Total OUT</div>
+        <div class="card-value">
+          <span id="metricOutCount">0</span>
+          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">exits</span>
+        </div>
+        <div class="card-subtitle">IR Sensor (Pin 19)</div>
       </div>
 
       <!-- Classroom Status -->
@@ -94,7 +114,7 @@
           <span id="lightDot" class="indicator-dot indicator-off"></span>
         </div>
         <div class="card-value" id="metricLightStatus">OFF</div>
-        <div class="card-subtitle">Relay Control 1</div>
+        <div class="card-subtitle">Relay Pin 26 (ON when Rm &gt; 0)</div>
       </div>
 
       <!-- Fan Status -->
@@ -104,7 +124,7 @@
           <span id="fanDot" class="indicator-dot indicator-off"></span>
         </div>
         <div class="card-value" id="metricFanStatus">OFF</div>
-        <div class="card-subtitle">Relay Control 2</div>
+        <div class="card-subtitle">Relay Pin 27 (ON when Rm &gt; 5)</div>
       </div>
 
       <!-- Camera Status -->
@@ -238,32 +258,28 @@
 
       <div class="simulator-controls">
         <div class="simulator-group">
-          <label for="simOccupancy">Occupancy:</label>
-          <input type="number" id="simOccupancy" class="simulator-input" value="4" min="0" max="100">
+          <label for="simInCount">IN Count (Pin 18):</label>
+          <input type="number" id="simInCount" class="simulator-input" value="7" min="0" oninput="autoCalcSimulator()">
         </div>
 
         <div class="simulator-group">
-          <label>Light:</label>
-          <select id="simLight" class="simulator-input" style="width: 75px;">
-            <option value="true" selected>ON</option>
-            <option value="false">OFF</option>
-          </select>
+          <label for="simOutCount">OUT Count (Pin 19):</label>
+          <input type="number" id="simOutCount" class="simulator-input" value="1" min="0" oninput="autoCalcSimulator()">
         </div>
 
         <div class="simulator-group">
-          <label>Fan:</label>
-          <select id="simFan" class="simulator-input" style="width: 75px;">
-            <option value="true" selected>ON</option>
-            <option value="false">OFF</option>
-          </select>
+          <label for="simRoomCount">Room (IN-OUT):</label>
+          <input type="number" id="simRoomCount" class="simulator-input" value="6" min="0" readonly style="background:#e2e8f0; font-weight:700;">
         </div>
 
         <div class="simulator-group">
-          <label>PIR Motion:</label>
-          <select id="simPIR" class="simulator-input" style="width: 85px;">
-            <option value="true" selected>DETECTED</option>
-            <option value="false">NONE</option>
-          </select>
+          <label>Light (Rm &gt; 0):</label>
+          <span id="simLightBadge" class="badge badge-present" style="padding: 4px 10px;">ON</span>
+        </div>
+
+        <div class="simulator-group">
+          <label>Fan (Rm &gt; 5):</label>
+          <span id="simFanBadge" class="badge badge-present" style="padding: 4px 10px;">ON</span>
         </div>
 
         <button class="btn btn-indigo btn-sm" onclick="sendHardwareTelemetry()">

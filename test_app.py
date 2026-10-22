@@ -94,18 +94,21 @@ class SmartClassroomTestCase(unittest.TestCase):
         database.delete_student(test_roll)
 
     def test_04_hardware_update_endpoint(self):
-        """Test POST /api/hardware/update endpoint for future ESP32 integration."""
+        """Test POST /api/hardware/update endpoint with ESP32 inCount, outCount, and roomCount."""
         payload = {
-            "occupancy": 8,
+            "inCount": 10,
+            "outCount": 2,
+            "roomCount": 8,
             "lightStatus": True,
-            "fanStatus": True,
-            "pirStatus": True
+            "fanStatus": True
         }
         res = self.app.post("/api/hardware/update", json=payload)
         self.assertEqual(res.status_code, 200)
         data = res.get_json()
         self.assertTrue(data["success"])
-        self.assertEqual(data["data"]["occupancy"], 8)
+        self.assertEqual(data["data"]["roomCount"], 8)
+        self.assertEqual(data["data"]["inCount"], 10)
+        self.assertEqual(data["data"]["outCount"], 2)
         self.assertEqual(data["data"]["classroom_status"], "OCCUPIED")
         self.assertEqual(data["data"]["light_status"], "ON")
         self.assertEqual(data["data"]["fan_status"], "ON")

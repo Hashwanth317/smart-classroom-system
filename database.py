@@ -60,6 +60,8 @@ def init_db():
             CREATE TABLE IF NOT EXISTS classroom_status (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 occupancy INTEGER DEFAULT 0,
+                in_count INTEGER DEFAULT 0,
+                out_count INTEGER DEFAULT 0,
                 light_status INTEGER DEFAULT 0,
                 fan_status INTEGER DEFAULT 0,
                 pir_status INTEGER DEFAULT 0,
@@ -67,12 +69,20 @@ def init_db():
             );
         """)
 
+        # Migration: ensure in_count and out_count exist
+        cursor.execute("PRAGMA table_info(classroom_status);")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "in_count" not in columns:
+            cursor.execute("ALTER TABLE classroom_status ADD COLUMN in_count INTEGER DEFAULT 0;")
+        if "out_count" not in columns:
+            cursor.execute("ALTER TABLE classroom_status ADD COLUMN out_count INTEGER DEFAULT 0;")
+
         # Seed initial classroom status record if empty
         cursor.execute("SELECT COUNT(*) FROM classroom_status WHERE id = 1;")
         if cursor.fetchone()[0] == 0:
             cursor.execute("""
-                INSERT INTO classroom_status (id, occupancy, light_status, fan_status, pir_status, updated_at)
-                VALUES (1, 0, 0, 0, 0, datetime('now', 'localtime'));
+                INSERT INTO classroom_status (id, occupancy, in_count, out_count, light_status, fan_status, pir_status, updated_at)
+                VALUES (1, 0, 0, 0, 0, 0, 0, datetime('now', 'localtime'));
             """)
 
         conn.commit()
@@ -301,28 +311,47 @@ def get_classroom_status():
         cursor.execute("SELECT * FROM classroom_status WHERE id = 1;")
         row = cursor.fetchone()
         if not row:
-            return {"occupancy": 0, "light_status": 0, "fan_status": 0, "pir_status": 0, "updated_at": ""}
-        return dict(row)
+            return {"occupancy": 0, "in_count": 0, "out_count": 0, "light_status": 0, "fan_status": 0, "pir_status": 0, "updated_at": ""}
+        d = dict(row)
+        if "in_count" not in d:
+            d["in_count"] = 0
+        if "out_count" not in d:
+            d["out_count"] = 0
+        return d
 
-def update_classroom_status(occupancy=None, light_status=None, fan_status=None, pir_status=None):
+def update_classroom_status(occupancy=None, in_count=None, out_count=None, light_status=None, fan_status=None, pir_status=None):
     """Update hardware status received from ESP32."""
     current = get_classroom_status()
     new_occ = int(occupancy) if occupancy is not None else current["occupancy"]
-    new_light = int(1 if light_status else 0) if light_status is not None else current["light_status"]
-    new_fan = int(1 if fan_status else 0) if fan_status is not None else current["fan_status"]
-    new_pir = int(1 if pir_status else 0) if pir_status is not None else current["pir_status"]
+    new_in = int(in_count) if in_count is not None else current.get("in_count", 0)
+    new_out = int(out_count) if out_count is not None else current.get("out_count", 0)
+
+    # Auto-derive lightStatus and fanStatus according to ESP32 firmware logic if not provided:
+    # lightStatus = (roomCount > 0)
+    # fanStatus = (roomCount > 5)
+    if light_status is not None:
+        new_light = int(1 if light_status else 0)
+    else:
+        new_light = int(1 if new_occ > 0 else 0)
+
+    if fan_status is not None:
+        new_fan = int(1 if fan_status else 0)
+    else:
+        new_fan = int(1 if new_occ > 5 else 0)
+
+    new_pir = int(1 if pir_status else 0) if pir_status is not None else current.get("pir_status", 0)
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE classroom_status
-            SET occupancy = ?, light_status = ?, fan_status = ?, pir_status = ?, updated_at = datetime('now', 'localtime')
+            SET occupancy = ?, in_count = ?, out_count = ?, light_status = ?, fan_status = ?, pir_status = ?, updated_at = datetime('now', 'localtime')
             WHERE id = 1;
-        """, (new_occ, new_light, new_fan, new_pir))
+        """, (new_occ, new_in, new_out, new_light, new_fan, new_pir))
         conn.commit()
 
     # Log significant status changes
-    status_summary = f"Hardware update: Occupancy={new_occ}, Light={'ON' if new_light else 'OFF'}, Fan={'ON' if new_fan else 'OFF'}"
+    status_summary = f"IR Sensors: Room={new_occ} (IN={new_in}, OUT={new_out}) | Light={'ON' if new_light else 'OFF'} | Fan={'ON' if new_fan else 'OFF'}"
     log_activity("hardware", status_summary)
 
     return get_classroom_status()

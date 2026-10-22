@@ -349,6 +349,8 @@ def get_status():
         "students_present": students_present,
         "total_registered": total_registered,
         "occupancy": hw_status.get("occupancy", 0),
+        "in_count": hw_status.get("in_count", 0),
+        "out_count": hw_status.get("out_count", 0),
         "classroom_status": "OCCUPIED" if hw_status.get("occupancy", 0) > 0 else "VACANT",
         "light_status": "ON" if hw_status.get("light_status") == 1 else "OFF",
         "fan_status": "ON" if hw_status.get("fan_status") == 1 else "OFF",
@@ -363,27 +365,32 @@ def get_status():
 def update_hardware():
     """
     ESP32 Hardware Telemetry API:
-    Receives JSON from ESP32 with occupancy count and relay states.
+    Receives JSON from ESP32 with inCount, outCount, roomCount, and relay states.
     Example payload:
     {
-        "occupancy": 4,
+        "inCount": 10,
+        "outCount": 2,
+        "roomCount": 8,
         "lightStatus": true,
-        "fanStatus": true,
-        "pirStatus": true
+        "fanStatus": true
     }
     """
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"success": False, "error": "Invalid or missing JSON payload"}), 400
 
-    # Accommodate both camelCase and snake_case keys
-    occupancy = data.get("occupancy")
+    # Support all naming conventions from ESP32 code
+    occupancy = data.get("occupancy", data.get("roomCount", data.get("room_count")))
+    in_count = data.get("inCount", data.get("in_count"))
+    out_count = data.get("outCount", data.get("out_count"))
     light_status = data.get("lightStatus", data.get("light_status"))
     fan_status = data.get("fanStatus", data.get("fan_status"))
     pir_status = data.get("pirStatus", data.get("pir_status"))
 
     updated = database.update_classroom_status(
         occupancy=occupancy,
+        in_count=in_count,
+        out_count=out_count,
         light_status=light_status,
         fan_status=fan_status,
         pir_status=pir_status
@@ -393,7 +400,10 @@ def update_hardware():
         "success": True,
         "message": "ESP32 classroom hardware status updated successfully",
         "data": {
+            "roomCount": updated["occupancy"],
             "occupancy": updated["occupancy"],
+            "inCount": updated.get("in_count", 0),
+            "outCount": updated.get("out_count", 0),
             "classroom_status": "OCCUPIED" if updated["occupancy"] > 0 else "VACANT",
             "light_status": "ON" if updated["light_status"] == 1 else "OFF",
             "fan_status": "ON" if updated["fan_status"] == 1 else "OFF",
@@ -427,6 +437,9 @@ def get_dashboard_data():
         "metrics": {
             "students_present": students_present,
             "occupancy": hw_status.get("occupancy", 0),
+            "room_count": hw_status.get("occupancy", 0),
+            "in_count": hw_status.get("in_count", 0),
+            "out_count": hw_status.get("out_count", 0),
             "classroom_status": "OCCUPIED" if hw_status.get("occupancy", 0) > 0 else "VACANT",
             "light_status": "ON" if hw_status.get("light_status") == 1 else "OFF",
             "fan_status": "ON" if hw_status.get("fan_status") == 1 else "OFF",
