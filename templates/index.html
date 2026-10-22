@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Classroom - Attendance & Energy Management System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container header-content">
+      <div class="brand-section">
+        <div class="brand-icon">SC</div>
+        <div class="brand-titles">
+          <h1>Smart Classroom</h1>
+          <div class="subtitle">
+            Attendance &amp; Energy Management System
+            <span class="team-tag">Team Tech Nova</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/register" class="btn btn-primary">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+          </svg>
+          Student Face Registration
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- MODE SWITCHER BANNER -->
+    <section class="mode-banner-container">
+      <div class="mode-info">
+        <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-secondary);">Current Attendance Mode:</span>
+        <span id="currentModeBadge" class="mode-badge-large mode-entry-badge">ENTRY MODE</span>
+      </div>
+      <div class="mode-buttons">
+        <button id="btnEntryMode" class="mode-btn active entry" onclick="switchMode('ENTRY')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+          </svg>
+          Entry Mode
+        </button>
+        <button id="btnExitMode" class="mode-btn exit" onclick="switchMode('EXIT')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          Exit Mode
+        </button>
+      </div>
+    </section>
+
+    <!-- DASHBOARD METRIC CARDS -->
+    <section class="cards-grid">
+      <!-- Students Present -->
+      <div class="card">
+        <div class="card-title">Students Present</div>
+        <div class="card-value">
+          <span id="metricPresentCount">0</span>
+          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">in class</span>
+        </div>
+        <div class="card-subtitle">Marked via Face Recognition</div>
+      </div>
+
+      <!-- Current Occupancy -->
+      <div class="card">
+        <div class="card-title">Current Occupancy</div>
+        <div class="card-value">
+          <span id="metricOccupancy">0</span>
+          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">people</span>
+        </div>
+        <div class="card-subtitle">IR Sensor Occupancy Count</div>
+      </div>
+
+      <!-- Classroom Status -->
+      <div class="card">
+        <div class="card-title">Classroom Status</div>
+        <div class="card-value" style="font-size: 1.25rem; margin-top: 4px;">
+          <span id="metricClassroomBadge" class="status-badge-vacant">VACANT</span>
+        </div>
+        <div class="card-subtitle">Energy Automation State</div>
+      </div>
+
+      <!-- Light Status -->
+      <div class="card">
+        <div class="card-title">
+          Light Status
+          <span id="lightDot" class="indicator-dot indicator-off"></span>
+        </div>
+        <div class="card-value" id="metricLightStatus">OFF</div>
+        <div class="card-subtitle">Relay Control 1</div>
+      </div>
+
+      <!-- Fan Status -->
+      <div class="card">
+        <div class="card-title">
+          Fan Status
+          <span id="fanDot" class="indicator-dot indicator-off"></span>
+        </div>
+        <div class="card-value" id="metricFanStatus">OFF</div>
+        <div class="card-subtitle">Relay Control 2</div>
+      </div>
+
+      <!-- Camera Status -->
+      <div class="card">
+        <div class="card-title">
+          Camera Status
+          <span id="cameraDot" class="indicator-dot indicator-on"></span>
+        </div>
+        <div class="card-value" id="metricCameraStatus" style="font-size: 1.35rem;">ONLINE</div>
+        <div class="card-subtitle">MacBook FaceTime Webcam</div>
+      </div>
+
+      <!-- Face Recognition Status -->
+      <div class="card">
+        <div class="card-title">Face Recognition</div>
+        <div class="card-value" id="metricFaceStatus" style="font-size: 1.35rem; color: var(--primary);">ACTIVE</div>
+        <div class="card-subtitle">FaceNet + Anti-Spoofing</div>
+      </div>
+    </section>
+
+    <!-- MAIN TWO-COLUMN SECTION: CAMERA & RECENT ACTIVITY -->
+    <div class="main-layout">
+      
+      <!-- Live Camera Area -->
+      <div class="camera-card">
+        <div class="card-header-row">
+          <h2 class="section-heading">Live Attendance Camera</h2>
+          <span id="cameraBadge" class="camera-status-pill camera-online">
+            <span class="indicator-dot indicator-on"></span>
+            CAMERA ONLINE
+          </span>
+        </div>
+
+        <div class="video-container" style="position: relative;">
+          <video id="liveWebcamVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+          <canvas id="attendanceOverlayCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+          <img id="liveVideoFeed" src="/video_feed" alt="Fallback Stream" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+          <div id="camPromptOverlay" style="display: none; position: absolute; inset: 0; background: rgba(15,23,42,0.85); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; text-align: center;">
+            <p style="font-weight: 600; margin-bottom: 0.5rem;">Webcam Access Needed</p>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem;">Please click allow in your browser or enable camera permission.</p>
+            <button class="btn btn-primary btn-sm" onclick="initDashboardWebcam()">Enable Webcam</button>
+          </div>
+        </div>
+
+        <div class="camera-controls">
+          <div class="camera-buttons">
+            <button class="btn btn-secondary btn-sm" onclick="startCamera()">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+              </svg>
+              Start Camera
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="stopCamera()">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
+              </svg>
+              Stop Camera
+            </button>
+          </div>
+          <span class="camera-hint">Position face within frame with good lighting</span>
+        </div>
+      </div>
+
+      <!-- Recent Activity Feed -->
+      <div class="activity-card">
+        <div class="card-header-row">
+          <h2 class="section-heading">Recent Activity</h2>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Real-time Events (Last 10)</span>
+        </div>
+
+        <ul id="activityList" class="activity-list">
+          <li class="activity-item">
+            <span class="activity-time">--:--</span>
+            <span class="activity-msg">Monitoring classroom events...</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- ATTENDANCE TABLE SECTION -->
+    <section class="table-card">
+      <div class="table-toolbar">
+        <div>
+          <h2 class="section-heading">Today's Attendance Sheet</h2>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+            Registered students and automatic entry/exit logs
+          </p>
+        </div>
+
+        <div class="search-boxes">
+          <input type="text" id="searchRollNo" class="search-input" placeholder="Search by Roll Number..." oninput="filterAttendance()">
+          <input type="text" id="searchName" class="search-input" placeholder="Search by Student Name..." oninput="filterAttendance()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Roll Number</th>
+              <th>Student Name</th>
+              <th>Entry Time</th>
+              <th>Exit Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody">
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                No registered students found yet. Click <strong>Student Face Registration</strong> above to register students.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ESP32 HARDWARE TELEMETRY & SIMULATOR PANEL -->
+    <section class="simulator-panel">
+      <div class="simulator-header">
+        <div class="simulator-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+          </svg>
+          ESP32 Energy Management API Bridge
+          <span style="font-size: 0.72rem; font-weight: 500; color: var(--text-muted);">(Endpoint: POST /api/hardware/update)</span>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">Quick Hardware Test Console</span>
+      </div>
+
+      <div class="simulator-controls">
+        <div class="simulator-group">
+          <label for="simOccupancy">Occupancy:</label>
+          <input type="number" id="simOccupancy" class="simulator-input" value="4" min="0" max="100">
+        </div>
+
+        <div class="simulator-group">
+          <label>Light:</label>
+          <select id="simLight" class="simulator-input" style="width: 75px;">
+            <option value="true" selected>ON</option>
+            <option value="false">OFF</option>
+          </select>
+        </div>
+
+        <div class="simulator-group">
+          <label>Fan:</label>
+          <select id="simFan" class="simulator-input" style="width: 75px;">
+            <option value="true" selected>ON</option>
+            <option value="false">OFF</option>
+          </select>
+        </div>
+
+        <div class="simulator-group">
+          <label>PIR Motion:</label>
+          <select id="simPIR" class="simulator-input" style="width: 85px;">
+            <option value="true" selected>DETECTED</option>
+            <option value="false">NONE</option>
+          </select>
+        </div>
+
+        <button class="btn btn-indigo btn-sm" onclick="sendHardwareTelemetry()">
+          Push ESP32 Telemetry
+        </button>
+
+        <span id="telemetryStatus" style="font-size: 0.78rem; font-weight: 600; color: var(--success); margin-left: auto;"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      Smart Classroom Attendance and Energy Management System &bull; Team Tech Nova &bull; Final Software Prototype
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

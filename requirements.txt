@@ -1,0 +1,7 @@
+Flask>=3.0.0
+opencv-python>=4.9.0
+numpy>=1.26.0
+deepface>=0.0.90
+mediapipe>=0.10.0
+onnxruntime>=1.16.0
+requests>=2.28.0

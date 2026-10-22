@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+env/
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# DeepFace cached weights and models
+.deepface/
+weights/
+
+# Local database file (auto-generated on first run)
+database/classroom.db
+
+# macOS System Files
+.DS_Store
+
+# IDE / Editor
+.vscode/
+.idea/
