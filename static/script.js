@@ -529,7 +529,7 @@ async function manualRefreshAttendance() {
     console.error("Attendance refresh error:", err);
   } finally {
     if (icon) icon.classList.remove("spinning");
-    if (text) text.textContent = "Refresh";
+    if (text) text.textContent = "Refresh Sheet";
     if (btn) btn.disabled = false;
   }
 }
