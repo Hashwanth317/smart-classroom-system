@@ -234,6 +234,100 @@ def record_exit(student_id):
     log_activity("exit", f"{name} ({roll}) exited classroom at {now_time}")
     return True, f"Exit recorded at {now_time}", {"student_id": student_id, "date": today, "exit_time": now_time, "status": "Left"}
 
+def reset_today_attendance(roll_no=None):
+    """
+    Reverse today's attendance status to 'Not Entered' and clear entry/exit times to NULL (--).
+    If roll_no is provided, resets only that student.
+    Otherwise, resets all students for today and resets occupancy to 0.
+    """
+    today = get_current_date()
+    s_name = ""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if roll_no:
+            roll_clean = roll_no.strip().upper()
+            cursor.execute("""
+                DELETE FROM attendance 
+                WHERE date = ? AND student_id = (
+                    SELECT id FROM students WHERE UPPER(roll_no) = ?
+                );
+            """, (today, roll_clean))
+            cursor.execute("SELECT name FROM students WHERE UPPER(roll_no) = ?;", (roll_clean,))
+            student = cursor.fetchone()
+            s_name = student["name"] if student else roll_clean
+        else:
+            cursor.execute("DELETE FROM attendance WHERE date = ?;", (today,))
+            cursor.execute("UPDATE classroom_status SET occupancy = 0, light_status = 0, fan_status = 0 WHERE id = 1;")
+        conn.commit()
+
+    if roll_no:
+        log_activity("reset", f"Attendance reversed for {s_name} ({roll_clean}): Status set to Not Entered, time cleared to --")
+    else:
+        log_activity("reset", "Attendance reversed for all students: Status set to Not Entered, times cleared to --")
+
+    return True
+
+def toggle_student_attendance(roll_no):
+    """
+    Toggle a student's attendance status for today:
+    If 'Present' or 'Left' -> reverse to 'Not Entered' (clears times to NULL).
+    If 'Not Entered' -> marks 'Present' with current time.
+    """
+    today = get_current_date()
+    now_time = get_current_time()
+    roll_clean = roll_no.strip().upper()
+    action = ""
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM students WHERE UPPER(roll_no) = ?;", (roll_clean,))
+        student = cursor.fetchone()
+        if not student:
+            return False, f"Student '{roll_clean}' not found", None
+
+        s_id = student["id"]
+        s_name = student["name"]
+
+        cursor.execute("SELECT * FROM attendance WHERE student_id = ? AND date = ?;", (s_id, today))
+        rec = cursor.fetchone()
+
+        if rec:
+            # Currently Present or Left -> Reverse to Not Entered (delete today's record)
+            cursor.execute("DELETE FROM attendance WHERE id = ?;", (rec["id"],))
+            conn.commit()
+            action = "reset"
+            result_data = {
+                "roll_no": roll_clean,
+                "name": s_name,
+                "status": "Not Entered",
+                "entry_time": None,
+                "exit_time": None
+            }
+            msg = f"Status reversed to Not Entered for {s_name}"
+        else:
+            # Currently Not Entered -> Mark Present
+            cursor.execute("""
+                INSERT INTO attendance (student_id, date, entry_time, exit_time, status)
+                VALUES (?, ?, ?, NULL, 'Present');
+            """, (s_id, today, now_time))
+            conn.commit()
+            action = "entry"
+            result_data = {
+                "roll_no": roll_clean,
+                "name": s_name,
+                "status": "Present",
+                "entry_time": now_time,
+                "exit_time": None
+            }
+            msg = f"Marked Present at {now_time} for {s_name}"
+
+    if action == "reset":
+        log_activity("reset", f"Reversed {s_name} ({roll_clean}) status to Not Entered, time cleared to --")
+    else:
+        log_activity("entry", f"Marked {s_name} ({roll_clean}) as Present at {now_time}")
+
+    return True, msg, result_data
+
 def get_today_attendance(search_query=None):
     """Retrieve full attendance list for today with student metadata and optional search filter."""
     today = get_current_date()

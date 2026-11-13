@@ -183,5 +183,32 @@ class SmartClassroomTestCase(unittest.TestCase):
         # Clean up
         database.delete_student(test_roll)
 
+    def test_10_attendance_reset_and_toggle(self):
+        """Test resetting today's attendance and toggling student status."""
+        test_roll = "RESET001"
+        test_name = "Reset Student"
+        database.delete_student(test_roll)
+        student_id = database.add_student(test_roll, test_name, [0.02]*128)
+
+        # Mark entry
+        database.record_entry(student_id)
+        att = database.get_today_attendance(search_query=test_roll)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(att[0]["status"], "Present")
+
+        # Toggle to reverse (Present -> Not Entered, time -> None)
+        res_toggle = self.app.post("/api/attendance/toggle", json={"roll_no": test_roll})
+        self.assertEqual(res_toggle.status_code, 200)
+        self.assertEqual(res_toggle.get_json()["record"]["status"], "Not Entered")
+        self.assertIsNone(res_toggle.get_json()["record"]["entry_time"])
+
+        # Reset all
+        res_reset = self.app.post("/api/attendance/reset", json={})
+        self.assertEqual(res_reset.status_code, 200)
+        self.assertTrue(res_reset.get_json()["success"])
+
+        # Clean up
+        database.delete_student(test_roll)
+
 if __name__ == "__main__":
     unittest.main()

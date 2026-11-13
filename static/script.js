@@ -304,11 +304,11 @@ function renderAttendanceTable(records) {
 
     let statusBadge = "";
     if (r.status === "Present") {
-      statusBadge = '<span class="badge badge-present">Present</span>';
+      statusBadge = `<span class="badge badge-present badge-clickable" onclick="toggleStudentStatus('${escapeHtml(r.roll_no)}', event)" title="Click to reverse status to Not Entered & clear time">Present <span style="font-size:0.7rem; opacity:0.8;">✕</span></span>`;
     } else if (r.status === "Left") {
-      statusBadge = '<span class="badge badge-left">Left</span>';
+      statusBadge = `<span class="badge badge-left badge-clickable" onclick="toggleStudentStatus('${escapeHtml(r.roll_no)}', event)" title="Click to reverse status to Not Entered & clear time">Left <span style="font-size:0.7rem; opacity:0.8;">✕</span></span>`;
     } else {
-      statusBadge = '<span class="badge badge-not-entered">Not Entered</span>';
+      statusBadge = `<span class="badge badge-not-entered badge-clickable" onclick="toggleStudentStatus('${escapeHtml(r.roll_no)}', event)" title="Click to mark Present">Not Entered</span>`;
     }
 
     tr.innerHTML = `
@@ -549,5 +549,81 @@ async function refreshStudentModalAttendance() {
     await openStudentAttendanceModal(currentModalRollNo);
   } finally {
     if (icon) icon.classList.remove("spinning");
+  }
+}
+
+async function manualResetAttendance() {
+  const btn = document.getElementById("btnResetAttendance");
+  const icon = document.getElementById("resetAttendanceIcon");
+  const text = document.getElementById("resetAttendanceText");
+  const lastUpdated = document.getElementById("attendanceLastUpdated");
+
+  if (btn) btn.disabled = true;
+  if (icon) icon.classList.add("spinning");
+  if (text) text.textContent = "Reversing Status...";
+
+  try {
+    const res = await fetch("/api/attendance/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    const data = await res.json();
+
+    await fetchDashboardData();
+
+    if (lastUpdated) {
+      lastUpdated.textContent = "• Status Reversed: All students set to Not Entered & times to --";
+      lastUpdated.style.color = "var(--danger)";
+      lastUpdated.style.fontWeight = "600";
+      setTimeout(() => {
+        if (lastUpdated) {
+          lastUpdated.style.color = "var(--text-muted)";
+          lastUpdated.style.fontWeight = "normal";
+        }
+      }, 4000);
+    }
+  } catch (err) {
+    console.error("Reset attendance error:", err);
+  } finally {
+    if (icon) icon.classList.remove("spinning");
+    if (text) text.textContent = "Reset / Reverse Status";
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function toggleStudentStatus(rollNo, event) {
+  if (event) event.stopPropagation();
+  const lastUpdated = document.getElementById("attendanceLastUpdated");
+
+  try {
+    const res = await fetch("/api/attendance/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roll_no: rollNo })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.error || "Failed to toggle status");
+      return;
+    }
+
+    await fetchDashboardData();
+
+    if (lastUpdated) {
+      const isNotEntered = data.record && data.record.status === "Not Entered";
+      lastUpdated.textContent = isNotEntered 
+        ? `• ${rollNo} status reversed to Not Entered & time cleared to --`
+        : `• ${rollNo} marked Present`;
+      lastUpdated.style.color = isNotEntered ? "var(--warning, #d97706)" : "var(--success)";
+      lastUpdated.style.fontWeight = "600";
+      setTimeout(() => {
+        if (lastUpdated) {
+          lastUpdated.style.color = "var(--text-muted)";
+          lastUpdated.style.fontWeight = "normal";
+        }
+      }, 3500);
+    }
+  } catch (err) {
+    console.error("Toggle student status error:", err);
   }
 }

@@ -337,6 +337,49 @@ def manual_exit():
     success, msg, rec = database.record_exit(student["id"])
     return jsonify({"success": success, "message": msg, "record": rec})
 
+@app.route('/api/attendance/reset', methods=['POST'])
+def reset_attendance():
+    """Reset / reverse today's attendance status to 'Not Entered' and clear times to '--'."""
+    data = request.get_json(silent=True) or {}
+    roll_no = data.get("roll_no", None)
+    if roll_no:
+        roll_no = roll_no.strip().upper()
+
+    database.reset_today_attendance(roll_no=roll_no)
+
+    # Clear recognition cooldowns so camera immediately recognizes students again
+    if roll_no:
+        student = database.get_student_by_roll(roll_no)
+        if student and hasattr(recognition_service, 'student_cooldowns'):
+            recognition_service.student_cooldowns.pop(student["id"], None)
+    else:
+        if hasattr(recognition_service, 'student_cooldowns'):
+            recognition_service.student_cooldowns.clear()
+
+    return jsonify({
+        "success": True,
+        "message": f"Attendance status reversed to 'Not Entered' and times cleared to '--' for {'all students' if not roll_no else roll_no}."
+    })
+
+@app.route('/api/attendance/toggle', methods=['POST'])
+def toggle_attendance():
+    """Toggle a student's status between 'Present' and 'Not Entered'."""
+    data = request.get_json(silent=True) or {}
+    roll_no = data.get("roll_no", "").strip()
+    if not roll_no:
+        return jsonify({"success": False, "error": "roll_no is required"}), 400
+
+    success, msg, rec = database.toggle_student_attendance(roll_no)
+    if not success:
+        return jsonify({"success": False, "error": msg}), 404
+
+    # If reversed to Not Entered, remove from recognition cooldown
+    student = database.get_student_by_roll(roll_no)
+    if student and hasattr(recognition_service, 'student_cooldowns'):
+        recognition_service.student_cooldowns.pop(student["id"], None)
+
+    return jsonify({"success": True, "message": msg, "record": rec})
+
 @app.route('/api/attendance/mode', methods=['POST'])
 def set_attendance_mode():
     """Toggle between ENTRY and EXIT mode."""
