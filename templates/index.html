@@ -217,15 +217,26 @@
     <section class="table-card">
       <div class="table-toolbar">
         <div>
-          <h2 class="section-heading">Today's Attendance Sheet</h2>
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <h2 class="section-heading" style="margin: 0;">Today's Attendance Sheet</h2>
+            <span id="attendanceLastUpdated" style="font-size: 0.78rem; color: var(--text-muted); transition: color 0.3s ease;"></span>
+          </div>
           <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
             Registered students and automatic entry/exit logs
           </p>
         </div>
 
-        <div class="search-boxes">
-          <input type="text" id="searchRollNo" class="search-input" placeholder="Search by Roll Number..." oninput="filterAttendance()">
-          <input type="text" id="searchName" class="search-input" placeholder="Search by Student Name..." oninput="filterAttendance()">
+        <div class="table-toolbar-actions">
+          <div class="search-boxes">
+            <input type="text" id="searchRollNo" class="search-input" placeholder="Search by Roll Number..." oninput="filterAttendance()">
+            <input type="text" id="searchName" class="search-input" placeholder="Search by Student Name..." oninput="filterAttendance()">
+          </div>
+          <button id="btnRefreshAttendance" class="btn btn-secondary btn-sm refresh-activity-btn" onclick="manualRefreshAttendance()" title="Refresh Today's Attendance Sheet">
+            <svg id="refreshAttendanceIcon" class="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            <span id="refreshAttendanceText">Refresh</span>
+          </button>
         </div>
       </div>
 
@@ -311,7 +322,15 @@
           </svg>
           Student Attendance History
         </h3>
-        <button class="modal-close-btn" onclick="closeStudentAttendanceModal()" title="Close">&times;</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button id="btnRefreshStudentModal" class="btn btn-secondary btn-sm refresh-activity-btn" onclick="refreshStudentModalAttendance()" title="Refresh Attendance History">
+            <svg id="refreshStudentModalIcon" class="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            <span>Refresh</span>
+          </button>
+          <button class="modal-close-btn" onclick="closeStudentAttendanceModal()" title="Close">&times;</button>
+        </div>
       </div>
       <div class="modal-body">
         <div class="modal-stats-grid">

@@ -175,7 +175,15 @@
           </svg>
           Student Attendance History
         </h3>
-        <button class="modal-close-btn" onclick="closeStudentAttendanceModal()" title="Close">&times;</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button id="btnRefreshStudentModal" class="btn btn-secondary btn-sm refresh-activity-btn" onclick="refreshStudentModalAttendance()" title="Refresh Attendance History">
+            <svg id="refreshStudentModalIcon" class="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            <span>Refresh</span>
+          </button>
+          <button class="modal-close-btn" onclick="closeStudentAttendanceModal()" title="Close">&times;</button>
+        </div>
       </div>
       <div class="modal-body">
         <div class="modal-stats-grid">
@@ -495,7 +503,10 @@
       }
     }
 
+    let currentModalRollNo = null;
+
     async function openStudentAttendanceModal(rollNo) {
+      currentModalRollNo = rollNo;
       const modal = document.getElementById("attendanceModal");
       const title = document.getElementById("modalStudentTitle");
       const tbody = document.getElementById("modalAttendanceTableBody");
@@ -558,6 +569,17 @@
 
     function closeStudentAttendanceModal() {
       document.getElementById("attendanceModal").classList.remove("active");
+    }
+
+    async function refreshStudentModalAttendance() {
+      if (!currentModalRollNo) return;
+      const icon = document.getElementById("refreshStudentModalIcon");
+      if (icon) icon.classList.add("spinning");
+      try {
+        await openStudentAttendanceModal(currentModalRollNo);
+      } finally {
+        if (icon) icon.classList.remove("spinning");
+      }
     }
   </script>
 </body>

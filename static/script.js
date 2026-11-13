@@ -404,7 +404,10 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+let currentModalRollNo = null;
+
 async function openStudentAttendanceModal(rollNo) {
+  currentModalRollNo = rollNo;
   const modal = document.getElementById("attendanceModal");
   if (!modal) return;
   const title = document.getElementById("modalStudentTitle");
@@ -498,5 +501,46 @@ async function manualRefreshActivity() {
     if (icon) icon.classList.remove("spinning");
     if (text) text.textContent = "Refresh";
     if (btn) btn.disabled = false;
+  }
+}
+
+async function manualRefreshAttendance() {
+  const btn = document.getElementById("btnRefreshAttendance");
+  const icon = document.getElementById("refreshAttendanceIcon");
+  const text = document.getElementById("refreshAttendanceText");
+  const lastUpdated = document.getElementById("attendanceLastUpdated");
+
+  if (btn) btn.disabled = true;
+  if (icon) icon.classList.add("spinning");
+  if (text) text.textContent = "Refreshing...";
+
+  try {
+    await fetchDashboardData();
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    if (lastUpdated) {
+      lastUpdated.textContent = `• Updated ${timeStr}`;
+      lastUpdated.style.color = "var(--primary)";
+      setTimeout(() => {
+        if (lastUpdated) lastUpdated.style.color = "var(--text-muted)";
+      }, 2500);
+    }
+  } catch (err) {
+    console.error("Attendance refresh error:", err);
+  } finally {
+    if (icon) icon.classList.remove("spinning");
+    if (text) text.textContent = "Refresh";
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function refreshStudentModalAttendance() {
+  if (!currentModalRollNo) return;
+  const icon = document.getElementById("refreshStudentModalIcon");
+  if (icon) icon.classList.add("spinning");
+  try {
+    await openStudentAttendanceModal(currentModalRollNo);
+  } finally {
+    if (icon) icon.classList.remove("spinning");
   }
 }
