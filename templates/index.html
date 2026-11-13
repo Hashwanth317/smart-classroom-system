@@ -191,8 +191,16 @@
       <!-- Recent Activity Feed -->
       <div class="activity-card">
         <div class="card-header-row">
-          <h2 class="section-heading">Recent Activity</h2>
-          <span style="font-size: 0.78rem; color: var(--text-muted);">Real-time Events (Last 10)</span>
+          <div>
+            <h2 class="section-heading">Recent Activity</h2>
+            <span id="activityLastUpdated" style="font-size: 0.78rem; color: var(--text-muted); transition: color 0.3s ease;">Real-time Events (Last 10)</span>
+          </div>
+          <button id="btnRefreshActivity" class="btn-secondary btn-sm refresh-activity-btn" onclick="manualRefreshActivity()" title="Refresh recent activity & live metrics">
+            <svg id="refreshIcon" class="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            <span id="refreshBtnText">Refresh</span>
+          </button>
         </div>
 
         <ul id="activityList" class="activity-list">

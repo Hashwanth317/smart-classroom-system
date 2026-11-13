@@ -457,6 +457,56 @@ header {
   flex-direction: column;
 }
 
+.refresh-activity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.refresh-activity-btn:hover:not(:disabled) {
+  background: var(--bg-primary);
+  color: var(--primary);
+  border-color: #93c5fd;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
+}
+
+.refresh-activity-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.refresh-activity-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.refresh-icon.spinning {
+  animation: spinActivity 0.75s linear infinite;
+}
+
+@keyframes spinActivity {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .activity-list {
   list-style: none;
   overflow-y: auto;

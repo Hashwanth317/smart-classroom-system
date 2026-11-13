@@ -470,3 +470,33 @@ function closeStudentAttendanceModal() {
   const modal = document.getElementById("attendanceModal");
   if (modal) modal.classList.remove("active");
 }
+
+async function manualRefreshActivity() {
+  const btn = document.getElementById("btnRefreshActivity");
+  const icon = document.getElementById("refreshIcon");
+  const text = document.getElementById("refreshBtnText");
+  const lastUpdated = document.getElementById("activityLastUpdated");
+
+  if (btn) btn.disabled = true;
+  if (icon) icon.classList.add("spinning");
+  if (text) text.textContent = "Refreshing...";
+
+  try {
+    await fetchDashboardData();
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    if (lastUpdated) {
+      lastUpdated.textContent = `Updated ${timeStr}`;
+      lastUpdated.style.color = "var(--primary)";
+      setTimeout(() => {
+        if (lastUpdated) lastUpdated.style.color = "var(--text-muted)";
+      }, 2500);
+    }
+  } catch (err) {
+    console.error("Manual refresh error:", err);
+  } finally {
+    if (icon) icon.classList.remove("spinning");
+    if (text) text.textContent = "Refresh";
+    if (btn) btn.disabled = false;
+  }
+}
