@@ -447,17 +447,26 @@ def get_dashboard_data():
     attendance_list = database.get_today_attendance()
     recent_activity = database.get_recent_activities(limit=10)
 
+    # Reconcile hardware telemetry with verified student presence
+    hw_occ = hw_status.get("occupancy", 0)
+    effective_occupancy = max(hw_occ, students_present)
+    is_occupied = (effective_occupancy > 0) or (students_present > 0)
+
+    # Derive light and fan states according to classroom occupancy logic
+    light_state = "ON" if (hw_status.get("light_status") == 1 or is_occupied) else "OFF"
+    fan_state = "ON" if (hw_status.get("fan_status") == 1 or effective_occupancy > 5) else "OFF"
+
     return jsonify({
         "success": True,
         "metrics": {
             "students_present": students_present,
-            "occupancy": hw_status.get("occupancy", 0),
-            "room_count": hw_status.get("occupancy", 0),
+            "occupancy": effective_occupancy,
+            "room_count": effective_occupancy,
             "in_count": hw_status.get("in_count", 0),
             "out_count": hw_status.get("out_count", 0),
-            "classroom_status": "OCCUPIED" if hw_status.get("occupancy", 0) > 0 else "VACANT",
-            "light_status": "ON" if hw_status.get("light_status") == 1 else "OFF",
-            "fan_status": "ON" if hw_status.get("fan_status") == 1 else "OFF",
+            "classroom_status": "OCCUPIED" if is_occupied else "VACANT",
+            "light_status": light_state,
+            "fan_status": fan_state,
             "pir_status": "ACTIVE" if hw_status.get("pir_status") == 1 else "INACTIVE",
             "camera_status": "ONLINE" if camera_manager.is_online() else "OFFLINE",
             "face_recognition_status": "ACTIVE" if camera_manager.is_online() else "STANDBY",

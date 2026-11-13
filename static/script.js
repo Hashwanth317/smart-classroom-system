@@ -98,7 +98,10 @@ async function sendAttendanceFrame() {
 
 async function fetchDashboardData() {
   try {
-    const res = await fetch("/api/dashboard");
+    const res = await fetch(`/api/dashboard?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+    });
     if (!res.ok) return;
     const data = await res.json();
     if (!data.success) return;
@@ -512,18 +515,22 @@ async function manualRefreshAttendance() {
 
   if (btn) btn.disabled = true;
   if (icon) icon.classList.add("spinning");
-  if (text) text.textContent = "Refreshing...";
+  if (text) text.textContent = "Refreshing Status...";
 
   try {
     await fetchDashboardData();
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     if (lastUpdated) {
-      lastUpdated.textContent = `• Updated ${timeStr}`;
-      lastUpdated.style.color = "var(--primary)";
+      lastUpdated.textContent = `• Status Refreshed at ${timeStr}`;
+      lastUpdated.style.color = "var(--success)";
+      lastUpdated.style.fontWeight = "600";
       setTimeout(() => {
-        if (lastUpdated) lastUpdated.style.color = "var(--text-muted)";
-      }, 2500);
+        if (lastUpdated) {
+          lastUpdated.style.color = "var(--text-muted)";
+          lastUpdated.style.fontWeight = "normal";
+        }
+      }, 3000);
     }
   } catch (err) {
     console.error("Attendance refresh error:", err);
