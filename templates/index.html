@@ -230,11 +230,12 @@
               <th>Entry Time</th>
               <th>Exit Time</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="attendanceTableBody">
             <tr>
-              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                 No registered students found yet. Click <strong>Student Face Registration</strong> above to register students.
               </td>
             </tr>
@@ -291,6 +292,60 @@
     </section>
 
   </main>
+
+  <!-- STUDENT ATTENDANCE HISTORY MODAL -->
+  <div id="attendanceModal" class="modal-backdrop" onclick="if(event.target===this) closeStudentAttendanceModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalStudentTitle">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color:var(--primary);">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          Student Attendance History
+        </h3>
+        <button class="modal-close-btn" onclick="closeStudentAttendanceModal()" title="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stats-grid">
+          <div class="modal-stat-card">
+            <div class="modal-stat-label">Days Present</div>
+            <div id="modalPresentCount" class="modal-stat-value" style="color: var(--success);">0</div>
+          </div>
+          <div class="modal-stat-card">
+            <div class="modal-stat-label">Total Days Logged</div>
+            <div id="modalTotalDays" class="modal-stat-value">0</div>
+          </div>
+          <div class="modal-stat-card">
+            <div class="modal-stat-label">Attendance Rate</div>
+            <div id="modalAttendanceRate" class="modal-stat-value" style="color: var(--primary);">0%</div>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="background:#fff;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="modalAttendanceTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                  Loading attendance records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeStudentAttendanceModal()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <footer>

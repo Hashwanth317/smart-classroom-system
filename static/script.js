@@ -287,7 +287,7 @@ function renderAttendanceTable(records) {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
           No matching student attendance records found.
         </td>
       </tr>
@@ -309,11 +309,19 @@ function renderAttendanceTable(records) {
     }
 
     tr.innerHTML = `
-      <td style="font-weight: 700; color: var(--primary);">${escapeHtml(r.roll_no)}</td>
-      <td style="font-weight: 600;">${escapeHtml(r.name)}</td>
+      <td style="font-weight: 700; color: var(--primary); cursor: pointer;" onclick="openStudentAttendanceModal('${escapeHtml(r.roll_no)}')" title="Click to view attendance history">${escapeHtml(r.roll_no)}</td>
+      <td style="font-weight: 600; cursor: pointer;" onclick="openStudentAttendanceModal('${escapeHtml(r.roll_no)}')" title="Click to view attendance history">${escapeHtml(r.name)}</td>
       <td>${r.entry_time || '<span style="color: var(--text-muted);">&mdash;</span>'}</td>
       <td>${r.exit_time || '<span style="color: var(--text-muted);">&mdash;</span>'}</td>
       <td>${statusBadge}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="openStudentAttendanceModal('${escapeHtml(r.roll_no)}')" title="View Attendance History">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="vertical-align:-1px; margin-right:3px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          View Attendance
+        </button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -394,4 +402,71 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+async function openStudentAttendanceModal(rollNo) {
+  const modal = document.getElementById("attendanceModal");
+  if (!modal) return;
+  const title = document.getElementById("modalStudentTitle");
+  const tbody = document.getElementById("modalAttendanceTableBody");
+  const statPresent = document.getElementById("modalPresentCount");
+  const statTotal = document.getElementById("modalTotalDays");
+  const statRate = document.getElementById("modalAttendanceRate");
+
+  modal.classList.add("active");
+  title.innerHTML = `
+    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color:var(--primary);">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+    </svg>
+    Attendance History: ${escapeHtml(rollNo)}
+  `;
+  tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Fetching attendance records...</td></tr>`;
+
+  try {
+    const res = await fetch(`/api/students/${encodeURIComponent(rollNo)}/attendance`);
+    const data = await res.json();
+
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--danger);">${data.error || 'Failed to load records'}</td></tr>`;
+      return;
+    }
+
+    title.innerHTML = `
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color:var(--primary);">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+      </svg>
+      ${escapeHtml(data.student.name)} (${escapeHtml(data.student.roll_no)})
+    `;
+    if (statPresent) statPresent.textContent = data.present_days;
+    if (statTotal) statTotal.textContent = data.total_records;
+    if (statRate) statRate.textContent = `${data.attendance_rate}%`;
+
+    if (!data.records || data.records.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No attendance records found for this student yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = "";
+    data.records.forEach(r => {
+      const tr = document.createElement("tr");
+      let badge = r.status === "Present" 
+        ? '<span class="badge badge-present">Present</span>'
+        : (r.status === "Left" ? '<span class="badge badge-left">Left</span>' : '<span class="badge badge-not-entered">Not Entered</span>');
+      tr.innerHTML = `
+        <td style="font-weight:600;">${r.date}</td>
+        <td>${r.entry_time || '<span style="color:var(--text-muted);">&mdash;</span>'}</td>
+        <td>${r.exit_time || '<span style="color:var(--text-muted);">&mdash;</span>'}</td>
+        <td>${badge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--danger);">Error: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function closeStudentAttendanceModal() {
+  const modal = document.getElementById("attendanceModal");
+  if (modal) modal.classList.remove("active");
 }

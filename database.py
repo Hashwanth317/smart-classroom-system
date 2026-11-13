@@ -277,6 +277,38 @@ def get_present_students_count():
         """, (today,))
         return cursor.fetchone()[0]
 
+def get_student_attendance_history(roll_no):
+    """Retrieve complete historical attendance records and stats for a specific student."""
+    roll_clean = roll_no.strip().upper()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, roll_no, name, registered_at FROM students WHERE UPPER(roll_no) = ?;", (roll_clean,))
+        student = cursor.fetchone()
+        if not student:
+            return None
+
+        student_dict = dict(student)
+
+        cursor.execute("""
+            SELECT id, date, entry_time, exit_time, status
+            FROM attendance
+            WHERE student_id = ?
+            ORDER BY date DESC, id DESC;
+        """, (student_dict["id"],))
+        records = [dict(r) for r in cursor.fetchall()]
+
+        total_records = len(records)
+        present_days = sum(1 for r in records if r["status"] in ("Present", "Left"))
+        attendance_rate = round((present_days / total_records * 100), 1) if total_records > 0 else 0.0
+
+        return {
+            "student": student_dict,
+            "records": records,
+            "total_records": total_records,
+            "present_days": present_days,
+            "attendance_rate": attendance_rate
+        }
+
 # --- ACTIVITY LOG HELPERS ---
 
 def log_activity(event_type, message):

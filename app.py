@@ -291,6 +291,14 @@ def remove_student(roll_no):
         return jsonify({"success": True, "message": f"Student {roll_no.upper()} removed successfully."})
     return jsonify({"success": False, "error": f"Student {roll_no.upper()} not found."}), 404
 
+@app.route('/api/students/<roll_no>/attendance', methods=['GET'])
+def get_student_attendance_history_api(roll_no):
+    """Retrieve full historical attendance records and statistics for an individual student."""
+    data = database.get_student_attendance_history(roll_no)
+    if not data:
+        return jsonify({"success": False, "error": f"Student '{roll_no.upper()}' not found."}), 404
+    return jsonify({"success": True, **data})
+
 @app.route('/api/attendance', methods=['GET'])
 def get_attendance():
     """Retrieve today's attendance table, supports ?search= query parameter."""

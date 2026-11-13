@@ -165,6 +165,60 @@
 
   </main>
 
+  <!-- STUDENT ATTENDANCE HISTORY MODAL -->
+  <div id="attendanceModal" class="modal-backdrop" onclick="if(event.target===this) closeStudentAttendanceModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalStudentTitle">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color:var(--primary);">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          Student Attendance History
+        </h3>
+        <button class="modal-close-btn" onclick="closeStudentAttendanceModal()" title="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stats-grid">
+          <div class="modal-stat-card">
+            <div class="modal-stat-label">Days Present</div>
+            <div id="modalPresentCount" class="modal-stat-value" style="color: var(--success);">0</div>
+          </div>
+          <div class="modal-stat-card">
+            <div class="modal-stat-label">Total Days Logged</div>
+            <div id="modalTotalDays" class="modal-stat-value">0</div>
+          </div>
+          <div class="modal-stat-card">
+            <div class="modal-stat-label">Attendance Rate</div>
+            <div id="modalAttendanceRate" class="modal-stat-value" style="color: var(--primary);">0%</div>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="background:#fff;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="modalAttendanceTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                  Loading attendance records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeStudentAttendanceModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer>
     <div class="container">
@@ -261,9 +315,17 @@
             <td style="font-weight: 600;">${st.name}</td>
             <td style="color: var(--text-secondary); font-size: 0.8rem;">${st.registered_at || "Recent"}</td>
             <td>
-              <button class="btn btn-danger btn-sm" onclick="deleteStudent('${st.roll_no}', '${st.name}')">
-                Delete
-              </button>
+              <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                <button class="btn btn-secondary btn-sm" onclick="openStudentAttendanceModal('${st.roll_no}')" title="View Full Attendance History">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="vertical-align:-1px; margin-right:3px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  View Attendance
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteStudent('${st.roll_no}', '${st.name}')">
+                  Delete
+                </button>
+              </div>
             </td>
           `;
           tbody.appendChild(tr);
@@ -431,6 +493,71 @@
       } catch (err) {
         showAlert("error", "Error deleting student: " + err.message);
       }
+    }
+
+    async function openStudentAttendanceModal(rollNo) {
+      const modal = document.getElementById("attendanceModal");
+      const title = document.getElementById("modalStudentTitle");
+      const tbody = document.getElementById("modalAttendanceTableBody");
+      const statPresent = document.getElementById("modalPresentCount");
+      const statTotal = document.getElementById("modalTotalDays");
+      const statRate = document.getElementById("modalAttendanceRate");
+
+      modal.classList.add("active");
+      title.innerHTML = `
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color:var(--primary);">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        Attendance History: ${rollNo}
+      `;
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Fetching attendance records...</td></tr>`;
+
+      try {
+        const res = await fetch(`/api/students/${encodeURIComponent(rollNo)}/attendance`);
+        const data = await res.json();
+
+        if (!data.success) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--danger);">${data.error || 'Failed to load records'}</td></tr>`;
+          return;
+        }
+
+        title.innerHTML = `
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color:var(--primary);">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          ${data.student.name} (${data.student.roll_no})
+        `;
+        statPresent.textContent = data.present_days;
+        statTotal.textContent = data.total_records;
+        statRate.textContent = `${data.attendance_rate}%`;
+
+        if (!data.records || data.records.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No attendance records found for this student yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = "";
+        data.records.forEach(r => {
+          const tr = document.createElement("tr");
+          let badge = r.status === "Present" 
+            ? '<span class="badge badge-present">Present</span>'
+            : (r.status === "Left" ? '<span class="badge badge-left">Left</span>' : '<span class="badge badge-not-entered">Not Entered</span>');
+          tr.innerHTML = `
+            <td style="font-weight:600;">${r.date}</td>
+            <td>${r.entry_time || '<span style="color:var(--text-muted);">&mdash;</span>'}</td>
+            <td>${r.exit_time || '<span style="color:var(--text-muted);">&mdash;</span>'}</td>
+            <td>${badge}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--danger);">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function closeStudentAttendanceModal() {
+      document.getElementById("attendanceModal").classList.remove("active");
     }
   </script>
 </body>

@@ -160,5 +160,28 @@ class SmartClassroomTestCase(unittest.TestCase):
         # Orthogonal vectors should have distance 1.0
         self.assertAlmostEqual(cosine_distance(v1, v3), 1.0, places=4)
 
+    def test_09_student_attendance_history(self):
+        """Test retrieving individual student attendance history and stats."""
+        test_roll = "HIST001"
+        test_name = "History Student"
+        database.delete_student(test_roll)
+        student_id = database.add_student(test_roll, test_name, [0.01]*128)
+
+        # Mark entry
+        database.record_entry(student_id)
+
+        # Check API endpoint
+        res = self.app.get(f"/api/students/{test_roll}/attendance")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["student"]["roll_no"], test_roll)
+        self.assertEqual(data["total_records"], 1)
+        self.assertEqual(data["present_days"], 1)
+        self.assertEqual(data["attendance_rate"], 100.0)
+
+        # Clean up
+        database.delete_student(test_roll)
+
 if __name__ == "__main__":
     unittest.main()
